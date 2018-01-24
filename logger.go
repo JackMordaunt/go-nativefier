@@ -1,37 +1,28 @@
 package main
 
-import (
-	"fmt"
-	"os"
-)
+// Logger is a simple interface to handle logging output.
+type Logger func(format string, values ...interface{})
 
-// Logger provides a simple logging api.
-type Logger interface {
-	Info(format string, values ...interface{})
-	Debug(format string, values ...interface{})
+var log = struct {
+	Errorf Logger
+	Debugf Logger
+}{
+	Errorf: emptyLogger(),
+	Debugf: emptyLogger(),
 }
 
-// DefaultLogger implements Logger.
-type DefaultLogger struct {
-	Verbose bool
-}
-
-// Info prints to stdout.
-func (l DefaultLogger) Info(format string, values ...interface{}) {
-	fmt.Fprintf(
-		os.Stdout,
-		fmt.Sprintf("%s", format),
-		values...,
-	)
-}
-
-// Debug prints to stdout if 'Verbose' is true.
-func (l DefaultLogger) Debug(format string, values ...interface{}) {
-	if l.Verbose {
-		fmt.Fprintf(
-			os.Stdout,
-			fmt.Sprintf("[debug] %s", format),
-			values...,
-		)
+func emptyLogger() Logger {
+	return func(string, ...interface{}) {
+		return
 	}
+}
+
+// SetDebugLogger assigns debug output to the given logger.
+func SetDebugLogger(logger Logger) {
+	log.Debugf = logger
+}
+
+// SetErrorLogger assigns error output to the given logger.
+func SetErrorLogger(logger Logger) {
+	log.Errorf = logger
 }
