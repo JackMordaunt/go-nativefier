@@ -1,61 +1,58 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	stdlog "log"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
-	"github.com/zserge/webview"
 )
 
-func fatalf(f string, v ...interface{}) {
-	fmt.Printf(f+"\n", v...)
-	os.Exit(1)
+func init() {
+	SetErrorLogger(stdlog.Fatalf)
 }
 
 func main() {
 	var (
 		appMode = detectMode()
+		url     = ""
 		title   = pflag.String("title", "", "Title of app.")
-		address = pflag.String("address", "", "Address to fetch resources from.")
-		dest    = pflag.String("output", "./dist", "Directory to put package in.")
+		dest    = pflag.String("output", "./dist", "Directory to put bundle in.")
+		verbose = pflag.Bool("verbose", false, "Verbose mode prints diagnostic information during the bundle process.")
+		// dev     = pflag.Bool("dev", false, "Dev mode enables web inspector for webkit. For windows you can include firebug web inspector.")
 	)
 	pflag.Parse()
 	executable, err := os.Executable()
 	if err != nil {
-		fatalf("Could not resolve executable path: %s", err)
+		defaultLogger.Errorf("Could not resolve executable path: %v", err)
+	}
+	if *verbose {
+		SetDebugLogger(stdlog.Printf)
 	}
 	if appMode {
-		cfgPath := filepath.Join(filepath.Dir(executable), "config.json")
-		cfgData, err := ioutil.ReadFile(cfgPath)
-		if err != nil {
-			fatalf("Reading config: %v", err)
-		}
-		cfg := &struct {
-			Title   string
-			Address string
-		}{}
-		if err := json.Unmarshal(cfgData, cfg); err != nil {
-			fatalf("Reading config: %v", err)
-		}
-		fmt.Printf("Title: %s\n", cfg.Title)
-		fmt.Printf("Address: %s\n", cfg.Address)
-		if err := webview.Open(cfg.Title, cfg.Address, 800, 600, true); err != nil {
-			fatalf("Webview error: %s", err)
+		config := filepath.Join(filepath.Dir(executable), "config.json")
+		if err := runApp(config); err != nil {
+			fatalf("App failed: %v", err)
 		}
 		return
 	}
-	fmt.Printf("Bundle created: %s\n", filepath.Join(*dest, fmt.Sprintf("%s.app", *title)))
-	b := Bundler{
-		Target:  executable,
-		Title:   *title,
-		Address: *address,
+	if len(pflag.Args()) < 1 {
+		pflag.Usage()
+		fatalf("")
 	}
+	url = pflag.Args()[0]
+	b := NewBundler(
+		executable,
+		*title,
+		url,
+		true,
+		nil,
+	)
 	if err := b.Bundle(*dest); err != nil {
-		fatalf("Bundle error: %s", err)
+		fatalf("Bundle failed: %s", err)
 	}
 }
 
@@ -76,4 +73,23 @@ func detectMode() bool {
 		fatalf("Config 'file' is a directory.")
 	}
 	return true
+}
+
+func runApp(config string) error {
+	cfg, err := loadConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "reading config")
+	}
+	wv := NewWebview(cfg.Title, cfg.URL, 1280, 800, true, cfg.Debug)
+	signals.OnTerminate(func() {
+		wv.Exit()
+		fmt.Println("\nExiting")
+	})
+	defer wv.Exit()
+	wv.Run()
+	return nil
+}
+func fatalf(f string, v ...interface{}) {
+	fmt.Printf(f+"\n", v...)
+	os.Exit(1)
 }
