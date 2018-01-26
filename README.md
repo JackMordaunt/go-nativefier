@@ -14,15 +14,15 @@ go-nativefier has no dependencies on Nodejs or electron. It uses native web engi
 
 ## Roadmap
 
-* [ ] Native "bundles"
+* [ ] Native "bundles"  
         * [x] MacOS `.app`
         * [ ] Windows `.exe`
         * [ ] Linux elf binary
-* [ ] Icon support
+* [ ] Icon support  
         * [x] Icon inference
         * [x] Icon conversion
-* [ ] App name inference
-* [ ] Avoid "cold starts"
+* [ ] App name inference  
+* [ ] Avoid "cold starts"  
         * [ ] Cache website contents
         * [ ] Show loading animation instead of blank white screen
 
