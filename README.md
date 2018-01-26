@@ -28,7 +28,6 @@ go-nativefier has no dependencies on Nodejs or electron. It uses native web engi
 
 ## Caveats
 
-* No dev-tools
 * Potential incompatibilities between native web engines
 * No desktop integration that comes with electron
 
