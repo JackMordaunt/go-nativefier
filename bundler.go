@@ -5,22 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/png"
 	"io"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"text/template"
 
-	"github.com/disintegration/imaging"
+	"github.com/jackmordaunt/icns"
+
 	"github.com/muesli/smartcrop"
 	"github.com/spf13/afero"
 
 	"github.com/jackmordaunt/pageicon"
-	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
 )
 
@@ -40,7 +37,6 @@ type Bundler struct {
 
 	icon IconInferrer
 	fs   afero.Fs
-	log  logger
 }
 
 // NewBundler instantiates a Bundler.
@@ -74,7 +70,6 @@ func NewBundler(
 		URL:       url,
 		InferIcon: inferIcon,
 		icon:      inferrer,
-		log:       defaultLogger,
 		fs:        fs,
 	}
 	return b
@@ -89,21 +84,16 @@ func (b *Bundler) Bundle(dest string) error {
 	if err := b.prepare(app, macos, resources); err != nil {
 		return err
 	}
-	b.log.Debugf("Creating executable\n")
 	if err := b.CreateExecutable(macos); err != nil {
 		return errors.Wrap(err, "creating executable")
 	}
-	b.log.Debugf("Creating config\n")
 	if err := b.CreateConfig(macos); err != nil {
 		return err
 	}
 	if b.InferIcon {
-		b.log.Debugf("Inferring icon\n")
 		if err := b.FetchIcon(resources); err != nil {
-			b.log.Debugf("[error] %s\n", err)
 		}
 	}
-	b.log.Debugf("Creating Info.plist\n")
 	return b.CreatePlist(app)
 }
 
@@ -155,12 +145,10 @@ func (b *Bundler) FetchIcon(dest string) error {
 	if b.icon == nil {
 		return errNoInferrer
 	}
-	b.log.Debugf("url is %q\n", b.URL)
 	icon, err := b.icon.Infer(b.URL, []string{"png", "jpg", "ico"})
 	if err != nil {
 		return errors.Wrap(err, "inferring icon")
 	}
-	b.log.Debugf("inferred icon: %v\n", icon.Source)
 	if icon == nil {
 		return errors.New("could not infer icon")
 	}
@@ -168,7 +156,6 @@ func (b *Bundler) FetchIcon(dest string) error {
 	if err != nil {
 		return errors.Wrap(err, "converting icon")
 	}
-	b.log.Debugf("icon converted\n")
 	path := filepath.Join(dest, "icon.icns")
 	return writeFile(b.fs, path, converted.Data)
 }
@@ -195,85 +182,20 @@ func (b *Bundler) CreatePlist(dest string) error {
 }
 
 // convertIcon from png to icns.
-// depends on iconutil (macos native) and the filesystem.
-//
-// Note: We are forced to use the native filesystem to convert the icon.
-// The only way to mock the filesytem here would be to intercept the file i/o
-// performed by iconutil, which I don't know how to do. Named pipes?
-//
-// The os dependency doesn't leak from this method.
-//
-// Todo(jackmordaunt) Look into writing a Go implementation of
-// iconutil to avoid the dependency.
 func (b *Bundler) convertIcon(icon *Icon) (*Icon, error) {
-	tmp, err := ioutil.TempDir("", "")
+	buf := bytes.NewBuffer(nil)
+	img, _, err := image.Decode(icon.Data)
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(icon.Data)
-	if err != nil {
+	if err := icns.Encode(buf, img); err != nil {
 		return nil, err
 	}
-	// Prepare image.
-	original, _, err := image.Decode(bytes.NewBuffer(data))
-	if err != nil {
-		return nil, errors.Wrap(err, "decoding")
-	}
-	// Todo: find size without hard coding 128x128
-	// This code is ugly/brittle.
-	cropped := imaging.Fill(original, 128, 128, imaging.Center, imaging.Lanczos)
-	size, err := closestIconsetSize(cropped)
-	if err != nil {
-		return nil, err
-	}
-	scale := ""
-	nameSize := size
-	if size == 1024 {
-		nameSize = 512
-		scale = "@2x"
-	}
-	// Prepare files for iconutil.
-	iconName := fmt.Sprintf("icon_%dx%d%s.png", nameSize, nameSize, scale)
-	resizedPng := resize.Resize(uint(size), uint(size), cropped, resize.Bicubic)
-	resizedPngBuf := bytes.NewBuffer(nil)
-	if err := png.Encode(resizedPngBuf, resizedPng); err != nil {
-		return nil, errors.Wrap(err, "encoding png")
-	}
-	tmpPath := filepath.Join(tmp, "icon.iconset", iconName)
-	tmpDir := filepath.Dir(tmpPath)
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
-		return nil, err
-	}
-	wr, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_RDWR, 0755)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := io.Copy(wr, resizedPngBuf); err != nil {
-		wr.Close()
-		return nil, err
-	}
-	wr.Close()
-	// Create the .icns file.
-	iconPath := filepath.Join(
-		filepath.Dir(tmpDir),
-		"icon.icns",
-	)
-	cmd := exec.Command(
-		"iconutil",
-		"-c", "icns",
-		tmpDir,
-		iconPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, errors.Wrapf(err, "iconutil failed: %+v: %s",
-			cmd.Args, string(output))
-	}
-	converted, err := pageicon.NewFromFile(iconPath)
-	if err != nil {
-		return nil, err
-	}
-	return converted, nil
+	return &Icon{
+		Data: buf,
+		Mime: "image/icns",
+		Ext:  "icns",
+	}, nil
 }
 
 func smartCrop(img image.Image) (image.Image, error) {
