@@ -5,15 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	stdlog "log"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )
-
-func init() {
-	SetErrorLogger(stdlog.Fatalf)
-}
 
 func main() {
 	var (
@@ -21,16 +15,13 @@ func main() {
 		url     = ""
 		title   = pflag.String("title", "", "Title of app.")
 		dest    = pflag.String("output", "./dist", "Directory to put bundle in.")
-		verbose = pflag.Bool("verbose", false, "Verbose mode prints diagnostic information during the bundle process.")
 		// dev     = pflag.Bool("dev", false, "Dev mode enables web inspector for webkit. For windows you can include firebug web inspector.")
 	)
 	pflag.Parse()
 	executable, err := os.Executable()
 	if err != nil {
-		defaultLogger.Errorf("Could not resolve executable path: %v", err)
-	}
-	if *verbose {
-		SetDebugLogger(stdlog.Printf)
+		fmt.Printf("Could not resolve executable path: %v", err)
+
 	}
 	if appMode {
 		config := filepath.Join(filepath.Dir(executable), "config.json")

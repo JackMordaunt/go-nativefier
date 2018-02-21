@@ -93,8 +93,6 @@ func TestBundler_Bundle(t *testing.T) {
 
 			// Prepare an independent logger and filesystem.
 			logger := testLogger{}
-			b.log.Debugf = logger.Logf
-			b.log.Errorf = logger.Logf
 			b.fs = afero.NewMemMapFs()
 
 			if _, err := fb.Build(b.fs, "expected", tt.expected...); err != nil {
