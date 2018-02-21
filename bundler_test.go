@@ -10,6 +10,7 @@ import (
 )
 
 func TestBundler_Bundle(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		desc string
 
@@ -79,16 +80,9 @@ func TestBundler_Bundle(t *testing.T) {
 			wantLog: errNoInferrer.Error(),
 		},
 	}
-	// Note, Todo: The bundler has a dependency on the native filesystem
-	// in `Bundler.convertIcon`.
-	// Since the conversion process uses `ioutil.TempDir` the conversions
-	// should occur in independent directories.
-	// There is still a chance the `ioutil.TempDir` picks the same path
-	// twice, which would produce a nice little race condition.
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
+		t.Run(tt.desc, func(st *testing.T) {
 			b := NewBundler(
 				filepath.Join("src", tt.target),
 				tt.title,
@@ -104,10 +98,10 @@ func TestBundler_Bundle(t *testing.T) {
 			b.fs = afero.NewMemMapFs()
 
 			if _, err := fb.Build(b.fs, "expected", tt.expected...); err != nil {
-				t.Fatalf("[%s] failed setting up test files: %v", tt.desc, err)
+				st.Fatalf("failed setting up test files: %v", err)
 			}
 			if _, err := fb.Build(b.fs, "src", fb.File{Path: tt.target}); err != nil {
-				t.Fatalf("[%s] failed setting up test files: %v", tt.desc, err)
+				st.Fatalf("failed setting up test files: %v", err)
 			}
 
 			// Force the bundler's icon inferrer to be nil if the test
@@ -117,25 +111,25 @@ func TestBundler_Bundle(t *testing.T) {
 			}
 			err := b.Bundle(tt.dest)
 			if !tt.wantErr && err != nil {
-				t.Errorf("[%s] unexpected error: %v", tt.desc, err)
+				st.Errorf("unexpected error: %v", err)
 				return
 			}
 			if tt.wantErr && err == nil {
-				t.Errorf("[%s] want error, got nil", tt.desc)
+				st.Errorf("want error, got nil")
 				return
 			}
 			if tt.wantLog != "" {
 				if !logger.Contains(tt.wantLog) {
-					t.Errorf("[%s] wanted log message: %q", tt.desc, tt.wantLog)
+					st.Errorf("wanted log message: %q", tt.wantLog)
 				}
 				return
 			}
 			diff, ok, err := fb.CompareDirectories(b.fs, "expected", tt.dest)
 			if err != nil {
-				t.Fatalf("[%s] directory comparison failed: %v", tt.desc, err)
+				st.Fatalf("directory comparison failed: %v", err)
 			}
 			if !ok {
-				t.Errorf("[%s] want != got: \n%v", tt.desc, diff)
+				st.Errorf("want != got: \n%v", diff)
 			}
 		})
 	}
