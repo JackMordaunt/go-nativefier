@@ -2,16 +2,16 @@
 
 
 [[projects]]
-  name = "github.com/disintegration/imaging"
-  packages = ["."]
-  revision = "1884593a19ddc6f2ea050403430d02c1d0fc1283"
-  version = "v1.3.0"
-
-[[projects]]
   name = "github.com/jackmordaunt/filebuilder"
   packages = ["."]
   revision = "fe1f7ebce6006882c27a912834e641a1fea2fc2b"
   version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/jackmordaunt/icns"
+  packages = ["."]
+  revision = "7cc95a8fe4b2debf40514b46e5abe0206ec8ab99"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -62,11 +62,8 @@
   branch = "master"
   name = "golang.org/x/image"
   packages = [
-    "bmp",
     "draw",
-    "math/f64",
-    "tiff",
-    "tiff/lzw"
+    "math/f64"
   ]
   revision = "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7"
 
@@ -105,6 +102,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4df4792d49fc0eb2ade2dcfc69ff6897c963b7f9e4696dd7f7a9bfe7bcb20647"
+  inputs-digest = "e1271fef1dd32771ca5faa29440657fed6741fb51842bc00c0512d22f1bac625"
   solver-name = "gps-cdcl"
   solver-version = 1
