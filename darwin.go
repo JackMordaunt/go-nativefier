@@ -47,6 +47,7 @@ func (b *Darwin) Pack(dest string) error {
 	}
 	if b.InferIcon {
 		if err := b.FetchIcon(resources); err != nil {
+			return err
 		}
 	}
 	return b.CreatePlist(app)
