@@ -1,4 +1,4 @@
-package main
+package nativefier
 
 import (
 	"path/filepath"
