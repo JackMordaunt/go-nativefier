@@ -141,15 +141,17 @@ func (b *Darwin) convertIcon(icon *Icon) (*Icon, error) {
 	buf := bytes.NewBuffer(nil)
 	img, _, err := image.Decode(icon.Data)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "decoding icon image")
 	}
 	if err := icns.Encode(buf, img); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "encoding icns icon")
 	}
 	return &Icon{
-		Data: buf,
-		Mime: "image/icns",
-		Ext:  "icns",
+		Data:   buf,
+		Mime:   "image/icns",
+		Ext:    "icns",
+		Size:   buf.Len(),
+		Source: "converted",
 	}, nil
 }
 
