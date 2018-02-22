@@ -83,17 +83,14 @@ func TestBundler_Bundle(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.desc, func(st *testing.T) {
-			b := NewBundler(
-				filepath.Join("src", tt.target),
-				tt.title,
-				tt.url,
-				tt.inferIcon,
-				tt.inferrer,
-			)
-
-			// Prepare an independent logger and filesystem.
-			logger := testLogger{}
-			b.fs = afero.NewMemMapFs()
+			b := &Darwin{
+				Target:    filepath.Join("src", tt.target),
+				Title:     tt.title,
+				URL:       tt.url,
+				InferIcon: tt.inferIcon,
+				icon:      tt.inferrer,
+				fs:        afero.NewMemMapFs(),
+			}
 
 			if _, err := fb.Build(b.fs, "expected", tt.expected...); err != nil {
 				st.Fatalf("failed setting up test files: %v", err)
@@ -107,19 +104,13 @@ func TestBundler_Bundle(t *testing.T) {
 			if tt.inferIcon == true && tt.inferrer == nil {
 				b.icon = nil
 			}
-			err := b.Bundle(tt.dest)
+			err := b.Pack(tt.dest)
 			if !tt.wantErr && err != nil {
 				st.Errorf("unexpected error: %v", err)
 				return
 			}
 			if tt.wantErr && err == nil {
 				st.Errorf("want error, got nil")
-				return
-			}
-			if tt.wantLog != "" {
-				if !logger.Contains(tt.wantLog) {
-					st.Errorf("wanted log message: %q", tt.wantLog)
-				}
 				return
 			}
 			diff, ok, err := fb.CompareDirectories(b.fs, "expected", tt.dest)

@@ -20,12 +20,6 @@
   revision = "a33edd2c3c490919e02891dd3cf100f804501be9"
 
 [[projects]]
-  name = "github.com/muesli/smartcrop"
-  packages = ["."]
-  revision = "c6b1bf08b297d053c1b0bb5b964311b3b74fa49e"
-  version = "v0.2.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/nfnt/resize"
   packages = ["."]
@@ -57,15 +51,6 @@
   name = "github.com/zserge/webview"
   packages = ["."]
   revision = "1efca206df050c167ee39f4572040691b7b84611"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/image"
-  packages = [
-    "draw",
-    "math/f64"
-  ]
-  revision = "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7"
 
 [[projects]]
   branch = "master"
@@ -102,6 +87,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e1271fef1dd32771ca5faa29440657fed6741fb51842bc00c0512d22f1bac625"
+  inputs-digest = "1fb3798aae8bacb6e599d3c785ac773f7bc4c2446586ec6a6986769fcdbd0136"
   solver-name = "gps-cdcl"
   solver-version = 1

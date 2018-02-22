@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/jackmordaunt/icns"
-	"github.com/jackmordaunt/pageicon"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -31,44 +30,8 @@ type Darwin struct {
 	fs   afero.Fs
 }
 
-// NewBundler instantiates a Bundler.
-// target: the executable file to bundle.
-// title: name of the `.app` folder.
-// url: website to point to.
-// inferIcon: try to guess the icon.
-// inferrer: responsible for doing the inference, defaults to `pageicon.Infer`.
-func NewBundler(
-	target string,
-	title string,
-	url string,
-	inferIcon bool,
-
-	inferrer IconInferrer,
-
-) *Darwin {
-	if !strings.HasPrefix("http", url) {
-		if !strings.HasPrefix("www", url) {
-			url = fmt.Sprintf("https://www.%s", url)
-		} else {
-			url = fmt.Sprintf("https://%s", url)
-		}
-	}
-	if inferrer == nil {
-		inferrer = IconInferrerFunc(pageicon.Infer)
-	}
-	b := &Darwin{
-		Target:    target,
-		Title:     title,
-		URL:       url,
-		InferIcon: inferIcon,
-		icon:      inferrer,
-		fs:        fs,
-	}
-	return b
-}
-
-// Bundle into dest, which must be a valid file system path.
-func (b *Darwin) Bundle(dest string) error {
+// Pack creates an OSX ".app" inside the given destination directory.
+func (b *Darwin) Pack(dest string) error {
 	name := fmt.Sprintf("%s.app", b.Title)
 	app := filepath.Join(dest, name, "Contents")
 	macos := filepath.Join(app, "MacOS")
