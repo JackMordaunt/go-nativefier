@@ -25,9 +25,16 @@ var (
 	errNoInferrer = errors.New("no icon inferer available")
 )
 
-// Bundler bundles an executable into a native package with, passing the default
+// Packager creates an OS specific executable package.
+// For OSX this is typically a ".app", windows is ".exe" and linux is an elf
+// binary.
+type Packager interface {
+	Pack(dest string) error
+}
+
+// Darwin bundles an executable into a native package with, passing the default
 // arguments to it.
-type Bundler struct {
+type Darwin struct {
 	Title     string
 	URL       string
 	InferIcon bool
@@ -53,7 +60,7 @@ func NewBundler(
 
 	inferrer IconInferrer,
 
-) *Bundler {
+) *Darwin {
 	if !strings.HasPrefix("http", url) {
 		if !strings.HasPrefix("www", url) {
 			url = fmt.Sprintf("https://www.%s", url)
@@ -64,7 +71,7 @@ func NewBundler(
 	if inferrer == nil {
 		inferrer = IconInferrerFunc(pageicon.Infer)
 	}
-	b := &Bundler{
+	b := &Darwin{
 		Target:    target,
 		Title:     title,
 		URL:       url,
@@ -76,7 +83,7 @@ func NewBundler(
 }
 
 // Bundle into dest, which must be a valid file system path.
-func (b *Bundler) Bundle(dest string) error {
+func (b *Darwin) Bundle(dest string) error {
 	name := fmt.Sprintf("%s.app", b.Title)
 	app := filepath.Join(dest, name, "Contents")
 	macos := filepath.Join(app, "MacOS")
@@ -97,7 +104,7 @@ func (b *Bundler) Bundle(dest string) error {
 	return b.CreatePlist(app)
 }
 
-func (b Bundler) prepare(paths ...string) error {
+func (b Darwin) prepare(paths ...string) error {
 	for _, p := range paths {
 		if err := b.fs.MkdirAll(p, 0755); err != nil {
 			return err
@@ -107,7 +114,7 @@ func (b Bundler) prepare(paths ...string) error {
 }
 
 // CreateConfig creates the config file relative to dest.
-func (b *Bundler) CreateConfig(dest string) error {
+func (b *Darwin) CreateConfig(dest string) error {
 	config, err := json.Marshal(map[string]interface{}{
 		"Title": b.Title,
 		"URL":   b.URL,
@@ -120,7 +127,7 @@ func (b *Bundler) CreateConfig(dest string) error {
 }
 
 // CreateExecutable creates the main program executable relative to dest.
-func (b *Bundler) CreateExecutable(dest string) error {
+func (b *Darwin) CreateExecutable(dest string) error {
 	target, err := b.fs.Open(b.Target)
 	if err != nil {
 		return err
@@ -141,7 +148,7 @@ func (b *Bundler) CreateExecutable(dest string) error {
 }
 
 // FetchIcon creates and icon file relative to dest.
-func (b *Bundler) FetchIcon(dest string) error {
+func (b *Darwin) FetchIcon(dest string) error {
 	if b.icon == nil {
 		return errNoInferrer
 	}
@@ -161,7 +168,7 @@ func (b *Bundler) FetchIcon(dest string) error {
 }
 
 // CreatePlist creates an Info.plist file, relative to dest.
-func (b *Bundler) CreatePlist(dest string) error {
+func (b *Darwin) CreatePlist(dest string) error {
 	data := map[string]string{
 		"ExecutableName": b.Title,
 		"Identifier":     strings.TrimSpace(b.Title),
@@ -182,7 +189,7 @@ func (b *Bundler) CreatePlist(dest string) error {
 }
 
 // convertIcon from png to icns.
-func (b *Bundler) convertIcon(icon *Icon) (*Icon, error) {
+func (b *Darwin) convertIcon(icon *Icon) (*Icon, error) {
 	buf := bytes.NewBuffer(nil)
 	img, _, err := image.Decode(icon.Data)
 	if err != nil {
