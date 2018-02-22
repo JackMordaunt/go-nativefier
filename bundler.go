@@ -9,12 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"text/template"
 
 	"github.com/jackmordaunt/icns"
 
-	"github.com/muesli/smartcrop"
 	"github.com/spf13/afero"
 
 	"github.com/jackmordaunt/pageicon"
@@ -205,50 +203,6 @@ func (b *Darwin) convertIcon(icon *Icon) (*Icon, error) {
 	}, nil
 }
 
-func smartCrop(img image.Image) (image.Image, error) {
-	a := smartcrop.NewAnalyzer()
-	cropped, err := a.FindBestCrop(img, 512, 512)
-	if err != nil {
-		return nil, err
-	}
-	return cropped, nil
-}
-
-func closestIconsetSize(img image.Image) (int, error) {
-	dimensions := img.Bounds().Size()
-	biggest := dimensions.X
-	if dimensions.Y > biggest {
-		biggest = dimensions.Y
-	}
-	closest := struct {
-		Set      bool
-		Distance int
-		Index    int
-	}{}
-	for ii, size := range iconsetSizes {
-		distance := size - biggest
-		if distance < 0 {
-			distance = distance * -1
-		}
-		if !closest.Set {
-			closest.Distance = distance
-			closest.Index = ii
-			closest.Set = true
-		}
-		if distance < closest.Distance {
-			closest.Distance = distance
-			closest.Index = ii
-		}
-	}
-	return iconsetSizes[closest.Index], nil
-}
-
-func duplicate(data []byte) []byte {
-	ret := make([]byte, len(data))
-	copy(ret, data)
-	return ret
-}
-
 func writeFile(fs afero.Fs, path string, r io.Reader) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
@@ -294,31 +248,3 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 	<string>{{.IconName}}</string>
 </dict>
 </plist>`
-
-var iconsetSizes = []int{
-	16,
-	32,
-	128,
-	256,
-	512,
-	1024,
-}
-
-// pipe returns handles for reading from  and writing to a named pipe.
-// io.Writer writes to the pipe.
-// io.Reader reads from the pipe.
-// io.Closer closes the pipe, releasing the file handle.
-func pipe(path string) (io.Writer, io.Reader, io.Closer, error) {
-	if err := syscall.Mkfifo(path, 0755); err != nil {
-		return nil, nil, nil, err
-	}
-	wr, err := os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	r, err := os.OpenFile(path, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return wr, r, wr, nil
-}
