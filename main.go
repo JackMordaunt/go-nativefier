@@ -32,7 +32,7 @@ func main() {
 	}
 	if len(pflag.Args()) < 1 {
 		pflag.Usage()
-		fatalf("")
+		os.Exit(0)
 	}
 	url = pflag.Args()[0]
 	b := NewBundler(
