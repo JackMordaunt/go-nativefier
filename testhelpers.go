@@ -2,17 +2,15 @@ package nativefier
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
+	"image"
+	"image/png"
 	"strings"
-)
-
-const (
-	onePixelPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
 )
 
 type mockInferrer struct {
 	Error bool
+	Size  int
 }
 
 func (i mockInferrer) Infer(url string, prefs []string) (*Icon, error) {
@@ -21,13 +19,7 @@ func (i mockInferrer) Infer(url string, prefs []string) (*Icon, error) {
 		err  error
 	)
 	if !i.Error {
-		pngData := []byte(onePixelPng)
-		dst := make([]byte, len(pngData))
-		_, err := base64.StdEncoding.Decode(dst, pngData)
-		if err != nil {
-			panic(fmt.Sprintf("decoding test png: %v", err))
-		}
-		data := bytes.NewBuffer(dst)
+		data := _png(_rect(i.Size, i.Size))
 		icon = &Icon{
 			Source: "https://url/to/icon.png",
 			Data:   data,
@@ -93,4 +85,16 @@ func (logger *testLogger) setCache(pattern string, contains bool) {
 		logger.cache = map[string]bool{}
 	}
 	logger.cache[pattern] = contains
+}
+
+func _rect(w, h int) image.Image {
+	return image.Rect(0, 0, w, h)
+}
+
+func _png(m image.Image) *bytes.Buffer {
+	buf := bytes.NewBuffer(nil)
+	if err := png.Encode(buf, m); err != nil {
+		panic(fmt.Errorf("png test helper failed to encode image: %v", err))
+	}
+	return buf
 }
