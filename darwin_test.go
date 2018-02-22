@@ -9,7 +9,7 @@ import (
 	fb "github.com/jackmordaunt/filebuilder"
 )
 
-func TestBundler_Bundle(t *testing.T) {
+func TestDarwin_Pack(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		desc string
@@ -25,7 +25,6 @@ func TestBundler_Bundle(t *testing.T) {
 		dest     string
 		expected []fb.Entry
 		wantErr  bool
-		wantLog  string
 	}{
 		{
 			desc:      "icon not infered",
@@ -53,7 +52,7 @@ func TestBundler_Bundle(t *testing.T) {
 			title:     "test",
 			url:       "https://example.com",
 			inferIcon: true,
-			inferrer:  mockInferrer{},
+			inferrer:  mockInferrer{Size: 32},
 
 			dest: "dest",
 			expected: []fb.Entry{
@@ -77,7 +76,7 @@ func TestBundler_Bundle(t *testing.T) {
 			inferrer:  nil,
 
 			dest:    "dest",
-			wantLog: errNoInferrer.Error(),
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -99,26 +98,27 @@ func TestBundler_Bundle(t *testing.T) {
 				st.Fatalf("failed setting up test files: %v", err)
 			}
 
-			// Force the bundler's icon inferrer to be nil if the test
+			// Force the packagers's icon inferrer to be nil if the test
 			// explicitly calls for a nil inferrer.
 			if tt.inferIcon == true && tt.inferrer == nil {
 				b.icon = nil
 			}
 			err := b.Pack(tt.dest)
 			if !tt.wantErr && err != nil {
-				st.Errorf("unexpected error: %v", err)
-				return
+				st.Fatalf("unexpected error: %v", err)
 			}
 			if tt.wantErr && err == nil {
-				st.Errorf("want error, got nil")
+				st.Fatalf("want error, got nil")
+			}
+			if tt.wantErr && err != nil {
 				return
 			}
 			diff, ok, err := fb.CompareDirectories(b.fs, "expected", tt.dest)
 			if err != nil {
-				st.Fatalf("directory comparison failed: %v", err)
+				st.Fatalf("directory comparison failed: %v\n%v", err, diff)
 			}
 			if !ok {
-				st.Errorf("want != got: \n%v", diff)
+				st.Fatalf("want != got: \n%v", diff)
 			}
 		})
 	}
