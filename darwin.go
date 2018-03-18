@@ -99,7 +99,7 @@ func (b *Darwin) CreateExecutable(dest string) error {
 // FetchIcon creates and icon file relative to dest.
 func (b *Darwin) FetchIcon(dest string) error {
 	if b.icon == nil {
-		return errNoInferrer
+		return fmt.Errorf("no icon inferrer set")
 	}
 	icon, err := b.icon.Infer(b.URL, []string{"png", "jpg", "ico"})
 	if err != nil {

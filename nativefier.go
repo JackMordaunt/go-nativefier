@@ -2,15 +2,11 @@ package nativefier
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/jackmordaunt/pageicon"
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-)
-
-var (
-	errNoInferrer = errors.New("no icon inferer available")
 )
 
 // Packager creates an OS specific executable package.
@@ -34,7 +30,7 @@ func NewPackager(
 
 	inferrer IconInferrer,
 	fs afero.Fs,
-) Packager {
+) (Packager, error) {
 	if !strings.HasPrefix("http", url) {
 		if !strings.HasPrefix("www", url) {
 			url = fmt.Sprintf("https://www.%s", url)
@@ -48,13 +44,24 @@ func NewPackager(
 	if fs == nil {
 		fs = afero.NewOsFs()
 	}
-	b := &Darwin{
-		Target:    target,
-		Title:     title,
-		URL:       url,
-		InferIcon: inferIcon,
-		icon:      inferrer,
-		fs:        fs,
+	var p Packager
+	switch runtime.GOOS {
+	case "darwin":
+		p = &Darwin{
+			Target:    target,
+			Title:     title,
+			URL:       url,
+			InferIcon: inferIcon,
+			icon:      inferrer,
+			fs:        fs,
+		}
+	case "windows":
+		// Windows{}
+	case "linux":
+		// Elf{}
+	default:
+		return nil, fmt.Errorf("no packager implemented for %s",
+			runtime.GOOS)
 	}
-	return b
+	return p, nil
 }
