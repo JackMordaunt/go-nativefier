@@ -36,7 +36,7 @@ func main() {
 		os.Exit(0)
 	}
 	url = pflag.Args()[0]
-	b := nativefier.NewPackager(
+	p, err := nativefier.NewPackager(
 		executable,
 		*title,
 		url,
@@ -44,8 +44,11 @@ func main() {
 		nil,
 		nil,
 	)
-	if err := b.Pack(*dest); err != nil {
-		fatalf("Bundle failed: %s", err)
+	if err != nil {
+		fatalf("Initialising packager: %v", err)
+	}
+	if err := p.Pack(*dest); err != nil {
+		fatalf("Bundle failed: %v", err)
 	}
 }
 
