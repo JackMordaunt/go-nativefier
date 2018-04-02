@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"image"
+	"text/template"
+	// Import the standard image decoders.
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -101,7 +104,7 @@ func (b *Darwin) FetchIcon(dest string) error {
 	if b.icon == nil {
 		return fmt.Errorf("no icon inferrer set")
 	}
-	icon, err := b.icon.Infer(b.URL, []string{"png", "jpg", "ico"})
+	icon, err := b.icon.Infer(b.URL, []string{"png"})
 	if err != nil {
 		return errors.Wrap(err, "inferring icon")
 	}
@@ -118,11 +121,9 @@ func (b *Darwin) FetchIcon(dest string) error {
 
 // CreatePlist creates an Info.plist file, relative to dest.
 func (b *Darwin) CreatePlist(dest string) error {
-	data := map[string]string{
-		"ExecutableName": b.Title,
-		"Identifier":     strings.TrimSpace(b.Title),
-		"BundleName":     b.Title,
-		"IconName":       b.Icon,
+	data := map[string]interface{}{
+		"Identifier": strings.ToLower(strings.TrimSpace(b.Title)),
+		"BundleName": b.Title,
 	}
 	t, err := template.New("plist").Parse(plistTemplate)
 	if err != nil {
@@ -139,11 +140,11 @@ func (b *Darwin) CreatePlist(dest string) error {
 
 // convertIcon from png to icns.
 func (b *Darwin) convertIcon(icon *Icon) (*Icon, error) {
-	buf := bytes.NewBuffer(nil)
-	img, _, err := image.Decode(icon.Data)
+	img, f, err := image.Decode(icon.Data)
 	if err != nil {
-		return nil, errors.Wrap(err, "decoding icon image")
+		return nil, errors.Wrapf(err, "decoding icon image %s", f)
 	}
+	buf := bytes.NewBuffer(nil)
 	if err := icns.Encode(buf, img); err != nil {
 		return nil, errors.Wrap(err, "encoding icns icon")
 	}
@@ -168,7 +169,8 @@ func writeFile(fs afero.Fs, path string, r io.Reader) error {
 	return nil
 }
 
-var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+var plistTemplate = `
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -179,7 +181,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>{{.ExecutableName}}</string>
+	<string>go-nativefier</string>
 	
 	<key>CFBundleIdentifier</key>
 	<string>com.web.{{.Identifier}}</string>
@@ -198,6 +200,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>CFBundleIconFile</key>
-	<string>{{.IconName}}</string>
+	<string>icon.icns</string>
 </dict>
-</plist>`
+</plist>
+`
