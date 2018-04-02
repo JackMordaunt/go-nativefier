@@ -96,7 +96,7 @@ func (b *Darwin) CreateExecutable(dest string) error {
 	return nil
 }
 
-// FetchIcon creates and icon file relative to dest.
+// FetchIcon creates an icon file relative to dest.
 func (b *Darwin) FetchIcon(dest string) error {
 	if b.icon == nil {
 		return fmt.Errorf("no icon inferrer set")
