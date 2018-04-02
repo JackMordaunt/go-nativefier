@@ -26,24 +26,16 @@
 
 
 [[constraint]]
-  name = "github.com/disintegration/imaging"
-  version = "1.3.0"
-
-[[constraint]]
   name = "github.com/jackmordaunt/filebuilder"
   version = "0.1.0"
 
 [[constraint]]
+  name = "github.com/jackmordaunt/icns"
+  version = "1.0.0"
+
+[[constraint]]
   branch = "master"
   name = "github.com/jackmordaunt/pageicon"
-
-[[constraint]]
-  name = "github.com/muesli/smartcrop"
-  version = "0.2.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/nfnt/resize"
 
 [[constraint]]
   name = "github.com/pkg/errors"
@@ -51,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/spf13/afero"
-  version = "1.0.2"
+  version = "1.1.0"
 
 [[constraint]]
   name = "github.com/spf13/pflag"
