@@ -12,10 +12,11 @@ import (
 
 func main() {
 	var (
-		appMode = detectMode()
-		url     = ""
-		title   = pflag.String("title", "", "Title of app.")
-		dest    = pflag.String("output", "./dist", "Directory to put bundle in.")
+		appMode   = detectMode()
+		url       = ""
+		title     = pflag.String("title", "", "Title of app.")
+		dest      = pflag.String("output", "./dist", "Directory to put bundle in.")
+		inferIcon = pflag.Bool("infer-icon", true, "Attempt to infer the icon from the url.")
 		// dev     = pflag.Bool("dev", false, "Dev mode enables web inspector for webkit. For windows you can include firebug web inspector.")
 	)
 	pflag.Parse()
@@ -40,7 +41,7 @@ func main() {
 		executable,
 		*title,
 		url,
-		true,
+		*inferIcon,
 		nil,
 		nil,
 	)
